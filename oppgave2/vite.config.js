@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/oppgave2/',
+  base: '/React-Oppgave-2-useState---og-useEffect--/',
 })
