@@ -1,53 +1,75 @@
-import { useState } from "react";
-import "../App.css";
+import { useEffect, useState, useCallback } from "react";
+import "../App.css"; // Import skal alltid være øverst på filen
 
-const mockData = [
-  { username: "Ola Normann", email: "ola.normann@norge.no" },
-  { username: "Torleif", email: "torleif@kodehode.no" },
-  { username: "Jan Egil", email: "jan.egil@kodehode.no" },
-  { username: "Sander", email: "sander@kodehode.no" },
-];
+export default function CatInfo() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [randomFact, setRandomFact] = useState("");
 
-export function Users() {
-  const [users, setUsers] = useState(mockData);
-  const [newUsername, setNewUsername] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-
-  const addUser = () => {
-    if (!newUsername || !newEmail) return;
-    const newUser = { username: newUsername, email: newEmail };
-    setUsers([...users, newUser]);
-    setNewUsername("");
-    setNewEmail("");
+  const getRandomFact = (factsArray) => {
+    if (factsArray.length > 0) {
+      const randomIndex = Math.floor(Math.random() * factsArray.length);
+      setRandomFact(factsArray[randomIndex].fact);
+    }
   };
 
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("https://catfact.ninja/facts?limit=5");
+      if (!response.ok) {
+        throw new Error(`HTTP error. Status ${response.status}`);
+      }
+      const result = await response.json();
+      setData(result.data);
+      getRandomFact(result.data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   return (
-    <div className="mt-10 max-w-md mx-auto">
-      <h2 className="text-xl mb-4">👥 Brukere</h2>
-      <ul className="mb-4 space-y-1">
-        {users.map((user, idx) => (
-          <li key={idx}>
-            {user.username} – <span className="text-gray-600">{user.email}</span>
-          </li>
-        ))}
-      </ul>
-      <input
-        type="text"
-        placeholder="Brukernavn"
-        value={newUsername}
-        onChange={(e) => setNewUsername(e.target.value)}
-        className="border p-1 mr-2"
-      />
-      <input
-        type="email"
-        placeholder="E-post"
-        value={newEmail}
-        onChange={(e) => setNewEmail(e.target.value)}
-        className="border p-1 mr-2"
-      />
-      <button onClick={addUser} className="bg-blue-500 text-white px-3 py-1 rounded">
-        Legg til bruker
+    <div className="container">
+      <h2 className="title">🐾 Tilfeldig Kattfakta</h2>
+
+      {loading && <p>Loading...</p>}
+      {error && <p className="error">Error: {error}</p>}
+
+      {!loading && !error && randomFact && (
+        <p style={{ marginBottom: "1rem" }}>{randomFact}</p>
+      )}
+
+      <button className="button" onClick={() => getRandomFact(data)} disabled={loading}>
+        {loading ? "Laster..." : "Vis tilfeldig faktum"}
       </button>
+
+      <button
+        className="button"
+        style={{ marginTop: "10px" }}
+        onClick={fetchData}
+        disabled={loading}
+      >
+        {loading ? "Laster..." : "Hent nye fakta"}
+      </button>
+
+      {!loading && !error && (
+        <>
+          <h3 style={{ marginTop: "2rem" }}>Alle fakta:</h3>
+          <ul className="list">
+            {data.map((fact, index) => (
+              <li key={index}>{fact.fact}</li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
